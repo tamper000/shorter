@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Сократи ссылку</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(-45deg, #1e3c72, #2a5298, #3a6073, #16222a);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    @keyframes gradientBG {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    .auth-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .auth-button a.button {
+      background-image: linear-gradient(to right, #dcedc1, #a8e6cf);
+      border: none;
+      color: #333;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    .auth-button a.button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(168, 230, 207, 0.4);
+    }
+
+    .card {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      width: 100%;
+      max-width: 500px;
+      padding: 2rem;
+      color: white;
+    }
+
+    .card input.input {
+      background-color: transparent !important;
+      border: none;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+      border-radius: 0;
+      color: white;
+      box-shadow: none !important;
+    }
+
+    .card input.input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .card input.input:focus {
+      box-shadow: none;
+      border-color: #a8e6cf;
+    }
+
+    .label {
+      color: white;
+      font-weight: 500;
+    }
+
+    .title.has-text-centered {
+      color: white;
+    }
+
+    .button.is-primary {
+      background-image: linear-gradient(to right, #a8e6cf, #dcedc1);
+      border: none;
+      color: #333;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    .button.is-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(168, 230, 207, 0.4);
+    }
+
+    .result-link {
+      word-break: break-all;
+      color: #ffd700;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    .footer-text {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Кнопка авторизации / профиля -->
+  <div class="auth-button">
+    {{ if .IsAuthenticated }}
+      <a href="/profile" class="button">Профиль</a>
+    {{ else }}
+      <a href="/register" class="button">Регистрация</a>
+    {{ end }}
+  </div>
+
+  <!-- Основная форма -->
+  <div class="card">
+    <h1 class="title has-text-centered">🔗 Сократи ссылку</h1>
+    <form id="shorten-form">
+      <div class="field">
+        <label class="label">Ссылка</label>
+        <div class="control">
+          <input class="input" type="url" id="link" placeholder="https://example.com" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Псевдоним (опционально)</label>
+        <div class="control">
+          <input class="input" type="text" id="alias" placeholder="my-link" />
+        </div>
+      </div>
+
+      <div class="field is-grouped is-grouped-right mt-4">
+        <div class="control">
+          <button type="submit" class="button is-primary">Сократить</button>
+        </div>
+      </div>
+
+      <div id="result" class="content mt-4" style="display: none;">
+        <p>Короткая ссылка:</p>
+        <a id="short-link" class="result-link" target="_blank"></a>
+      </div>
+    </form>
+  </div>
+
+  <div class="footer-text">
+    Made with 💡 and Bulma CSS
+  </div>
+
+  <script>
+    document.getElementById('shorten-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const linkInput = document.getElementById('link');
+      const aliasInput = document.getElementById('alias');
+      const shortLinkEl = document.getElementById('short-link');
+      const resultBox = document.getElementById('result');
+
+      const data = {
+        link: linkInput.value.trim(),
+        alias: aliasInput.value.trim() || null
+      };
+
+      try {
+        const response = await fetch('/api/short', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error);
+        }
+
+        const domain = window.location.origin;
+        const fullShortUrl = `${domain}/${result.alias}`;
+
+        shortLinkEl.href = fullShortUrl;
+        shortLinkEl.textContent = fullShortUrl;
+        resultBox.style.display = 'block';
+
+        aliasInput.value = '';
+        linkInput.focus();
+      } catch (err) {
+        alert(err.message || 'Произошла ошибка');
+      }
+    });
+  </script>
+
+</body>
+</html>

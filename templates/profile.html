@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Профиль — {{ .Username }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(-45deg, #1e3c72, #2a5298, #3a6073, #16222a);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: white;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientBG {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 2rem;
+      color: white;
+      margin-bottom: 2rem;
+    }
+
+    .short-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .short-link:last-child {
+      border-bottom: none;
+    }
+
+    .short-link a {
+      color: #ffd700;
+      word-break: break-all;
+    }
+
+    .short-link strong {
+      color: white;
+    }
+
+    .button.is-small {
+      background-image: linear-gradient(to right, #a8e6cf, #dcedc1);
+      border: none;
+      color: #333;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+
+    .button.is-small:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(168, 230, 207, 0.4);
+    }
+
+    .button.is-outlined {
+      background-color: transparent;
+      border: 2px solid #a8e6cf;
+      color: #a8e6cf;
+    }
+
+    .username-highlight {
+      font-weight: bold;
+      background: linear-gradient(to right, #a8e6cf, #dcedc1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      transition: transform 0.3s ease;
+    }
+
+    .username-highlight:hover {
+      transform: scale(1.05);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: auto;
+      max-width: 90%;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .notification.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .notification.hide {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+
+    .footer-text {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Навигационная панель -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item has-text-white has-text-weight-bold" href="/">
+          🔗 Сократи ссылку
+        </a>
+      </div>
+      <div class="navbar-end">
+        <div class="navbar-item">
+          <p class="username-highlight">{{ .Username }}</p>
+        </div>
+        <div class="navbar-item">
+          <a href="/logout" class="button is-small">Выйти</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Контент профиля -->
+  <section class="section">
+    <div class="container">
+      <h1 class="title has-text-centered has-text-white">Ваши сокращённые ссылки</h1>
+
+      {{ if .Links }}
+        {{ range .Links }}
+          <div id="link-{{ .Alias }}" class="card short-link">
+            <div>
+              <strong>Короткая:</strong>
+              <a href="{{ $.BaseURL }}/{{ .Alias }}" target="_blank">{{ $.BaseURL }}/{{ .Alias }}</a><br>
+              <strong>Оригинал:</strong>
+              <a href="{{ .Original }}" target="_blank">{{ .Original }}</a><br>
+              <strong>Переходов:</strong> {{ .Clicks }}
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button onclick="copyToClipboard('{{ $.BaseURL }}/{{ .Alias }}')" class="button is-small">Копировать</button>
+              <button onclick="deleteLink('{{ .Alias }}')" class="button is-small">Удалить</button>
+            </div>
+          </div>
+        {{ end }}
+      {{ else }}
+        <p class="has-text-centered">Вы ещё не создали ни одной ссылки.</p>
+      {{ end }}
+
+      <div class="field is-grouped is-grouped-centered mt-5">
+        <div class="control">
+          <a href="/" class="button is-primary">Создать новую ссылку</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Уведомление -->
+  <div id="notification" class="notification is-danger hide"></div>
+
+  <div class="footer-text">
+    Made with 💡 and Bulma CSS
+  </div>
+
+  <script>
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showNotification("Ссылка скопирована!");
+      }, () => {
+        showNotification("Ошибка копирования");
+      });
+    }
+
+    async function deleteLink(alias) {
+      const confirmDelete = confirm("Вы уверены, что хотите удалить эту ссылку?");
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch('/api/delete/' + alias, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.message);
+        }
+
+        // Удаляем элемент из DOM
+        const linkElement = document.getElementById('link-' + alias);
+        if (linkElement) {
+          linkElement.remove();
+        }
+
+        showNotification("Ссылка успешно удалена", "success");
+
+      } catch (error) {
+        showNotification(error.message, "danger");
+      }
+    }
+
+    function showNotification(message, type = "success") {
+      const notification = document.getElementById("notification");
+      notification.className = `notification is-${type} show`;
+      notification.textContent = message;
+
+      setTimeout(() => {
+        notification.classList.remove("show");
+        notification.classList.add("hide");
+        setTimeout(() => {
+          notification.classList.remove("hide");
+        }, 300);
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>

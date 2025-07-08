@@ -33,7 +33,8 @@ The project was created as an experimental implementation of a URL shortener wit
 1. Clone the repository:
    ```bash
    git clone https://github.com/tamper000/shorter.git
-   cd shorter```
+   cd shorter
+   ```
 
 2. Install dependencies:
    ```bash
